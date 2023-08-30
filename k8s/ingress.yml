@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: basic-ingress
+  annotations:
+    certmanager.k8s.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: http01
+spec:
+  tls:
+  - hosts:
+    - clients.api.deltacapita.com
+    secretName: example-tls
+  rules:
+  - host: clients.api.deltacapita.com
+    http:
+      paths:
+      - backend:
+          serviceName: myapp
+          servicePort: 8080

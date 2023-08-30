@@ -1,0 +1,46 @@
+---
+image: dokku/ci-docker-image
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  GIT_DEPTH: 0
+
+test:
+  stage: test
+  script: |
+    cd myapp
+
+    # Install coverage
+    python3 -m pip install coverage
+
+    # Run test
+    coverage run -m pytest
+    coverage report
+
+build:
+  stage: build
+  script: |
+    cd myapp
+
+    # build the image
+    docker build -t "$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA" .
+
+    # login to docker hub
+    echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+    # push the image
+    docker push "$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA"
+
+deploy:
+  stage: deploy
+  only:
+    - master
+  variables:
+    GIT_REMOTE_URL: ssh://user@dockerhub.com:22/myapp
+  script: |
+    DEPLOY_DOCKER_IMAGE "$CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA" dokku-deploy
+  after_script: [dokku-unlock]
